@@ -1,4 +1,4 @@
-PY_SOURCE_FILES=training inference utils stress testing
+PY_SOURCE_FILES=training inference utils stress_testing
 
 
 test:
