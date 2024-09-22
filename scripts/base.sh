@@ -2,6 +2,6 @@
 set -e
 
 # Debian
-apt-get update
-apt-get install -y curl wget git vim
-apt-get autoremove
+sudo apt-get update
+sudo apt-get install -y curl wget git vim
+sudo apt-get autoremove

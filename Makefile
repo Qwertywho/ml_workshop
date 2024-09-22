@@ -1,4 +1,4 @@
-PY_SOURCE_FILES=*.py #this can be modified to include more files
+PY_SOURCE_FILES=training inference utils stress testing
 
 
 test:
