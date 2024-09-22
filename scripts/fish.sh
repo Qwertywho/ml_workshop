@@ -2,7 +2,7 @@
 set -e
 
 mkdir -p ${HOME}/.config
-conda install -c conda-forge -y fish
+${HOME}/miniconda3/bin/conda install -c conda-forge -y fish
 
 mkdir -p ${HOME}/.config/fish
 cp config.fish ${HOME}/.config/fish/
