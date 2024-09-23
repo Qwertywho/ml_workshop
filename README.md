@@ -14,3 +14,8 @@
     ``` 
 
 * clone the git repo
+* run the start.sh
+
+### Running Training Task
+
+* install required packages

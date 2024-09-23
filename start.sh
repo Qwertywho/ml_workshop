@@ -9,6 +9,6 @@ do
     bash $cmd
 done
 
-cd
+cd ..
 
 echo "Enjoy :-)"
