@@ -1,5 +1,5 @@
 import logging
-
+import sys
 
 class ColorfulFormatter(logging.Formatter):
     grey = "\x1b[38;21m"
@@ -26,24 +26,12 @@ class ColorfulFormatter(logging.Formatter):
         return formatter.format(record)
 
 
-def register_logger(logging_path):
-    logger = logging.getLogger()
-
-    logger.setLevel(logging.INFO)
-    file_handler = logging.FileHandler(logging_path)
-    file_handler.setFormatter(
-        logging.Formatter(
-            (
-                "%(asctime)s - %(filename)s:%(lineno)d"
-                " - %(module)s.%(funcName)s - %(process)d - %(message)s"
-            ),
-            "%Y-%m-%dT%H:%M:%S.%f%z",
-        )
-    )
-    logger.addHandler(file_handler)
-
-    streaming_handler = logging.StreamHandler()
-    streaming_handler.setFormatter(ColorfulFormatter())
-    logger.addHandler(streaming_handler)
-
-    return logger
+def register_logger(logger=None):
+    """register colorful debug log"""
+    if not logger:
+        logger = logging.getLogger()
+    if not logger.hasHandlers():
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(ColorfulFormatter())
+        logger.setLevel(logging.DEBUG)
+        logger.addHandler(handler)
