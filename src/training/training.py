@@ -1,15 +1,16 @@
-import torch
+import argparse
 import logging
 from dataclasses import dataclass
+
+import torch
 from datasets import load_dataset
 from transformers import (
     DistilBertForSequenceClassification,
     DistilBertTokenizer,
     Trainer,
-    TrainingArguments,
     TrainerCallback,
+    TrainingArguments,
 )
-import argparse
 
 # Set up custom logging
 logger = logging.getLogger(__name__)
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class TrainingParams:
     """Dataclass for holding training parameters."""
+
     model_name: str = "distilbert-base-uncased"
     dataset_name: str = "imdb"
     output_dir: str = "./results"
@@ -124,17 +126,52 @@ class DistilBertFineTuner:
 
 def parse_args():
     """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(description="Fine-tune DistilBERT for sentiment analysis.")
+    parser = argparse.ArgumentParser(
+        description="Fine-tune DistilBERT for sentiment analysis."
+    )
 
-    parser.add_argument("--model_name", type=str, default="distilbert-base-uncased", help="Name of the model to use.")
-    parser.add_argument("--dataset_name", type=str, default="imdb", help="Name of the dataset to use.")
-    parser.add_argument("--output_dir", type=str, default="./results", help="Directory to save the model and results.")
-    parser.add_argument("--num_train_epochs", type=int, default=2, help="Number of training epochs.")
-    parser.add_argument("--batch_size", type=int, default=8, help="Batch size for training.")
-    parser.add_argument("--subset_size", type=int, default=20000, help="Number of samples to use for training.")
-    parser.add_argument("--eval_subset_size", type=int, default=5000, help="Number of samples to use for evaluation.")
-    parser.add_argument("--logging_steps", type=int, default=100, help="Number of steps for logging.")
-    parser.add_argument("--max_length", type=int, default=512, help="Maximum sequence length for tokenization.")
+    parser.add_argument(
+        "--model_name",
+        type=str,
+        default="distilbert-base-uncased",
+        help="Name of the model to use.",
+    )
+    parser.add_argument(
+        "--dataset_name", type=str, default="imdb", help="Name of the dataset to use."
+    )
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default="./results",
+        help="Directory to save the model and results.",
+    )
+    parser.add_argument(
+        "--num_train_epochs", type=int, default=2, help="Number of training epochs."
+    )
+    parser.add_argument(
+        "--batch_size", type=int, default=8, help="Batch size for training."
+    )
+    parser.add_argument(
+        "--subset_size",
+        type=int,
+        default=20000,
+        help="Number of samples to use for training.",
+    )
+    parser.add_argument(
+        "--eval_subset_size",
+        type=int,
+        default=5000,
+        help="Number of samples to use for evaluation.",
+    )
+    parser.add_argument(
+        "--logging_steps", type=int, default=100, help="Number of steps for logging."
+    )
+    parser.add_argument(
+        "--max_length",
+        type=int,
+        default=512,
+        help="Maximum sequence length for tokenization.",
+    )
 
     return parser.parse_args()
 
