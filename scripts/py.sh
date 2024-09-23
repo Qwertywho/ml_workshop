@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-CONDA="Miniconda3-latest-Linux-x86_64.sh"
+CONDA="Miniforge3-$(uname)-$(uname -m).sh"
 CONDA_DIR="${HOME}/miniconda3"
 CONDA_ENV="workshop-env"
 
@@ -10,7 +10,7 @@ mkdir -p ${HOME}/Downloads
 
 # Download Miniconda installer if it doesn't already exist
 if [ ! -f "${HOME}/Downloads/${CONDA}" ]; then
-    wget -O ${HOME}/Downloads/${CONDA} "https://repo.anaconda.com/miniconda/${CONDA}"
+    wget -O ${HOME}/Downloads/${CONDA} "https://github.com/conda-forge/miniforge/releases/latest/download/${CONDA}"
 fi
 
 # Install Miniconda silently
