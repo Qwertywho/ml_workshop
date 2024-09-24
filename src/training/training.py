@@ -106,6 +106,7 @@ class MLPTuner:
     def train(self):
         """Train the MLP model."""
         self.model.train()
+        logger.info("start training")
         for epoch in range(self.params.num_train_epochs):
             running_loss = 0.0
             for i, (inputs, labels) in enumerate(self.train_loader):
