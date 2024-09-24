@@ -1,4 +1,4 @@
-PY_SOURCE_FILES=src
+PY_SOURCE_FILES=workshop
 
 
 test:

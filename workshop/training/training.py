@@ -8,6 +8,7 @@ import torch.optim as optim
 from datasets import load_dataset
 from sklearn.feature_extraction.text import TfidfVectorizer
 from torch.utils.data import DataLoader, TensorDataset
+
 from workshop.utils.utils import register_logger
 
 # Set up custom logging
@@ -62,19 +63,31 @@ class MLPTuner:
 
     def load_data_and_vectorizer(self):
         """Load dataset and apply TF-IDF vectorization."""
+        logger.info(f"Loading the dataset '{self.params.dataset_name}'")
         dataset = load_dataset(self.params.dataset_name)
 
-        train_texts = dataset["train"]["text"][: self.params.subset_size]
-        train_labels = torch.tensor(
-            dataset["train"]["label"][: self.params.subset_size]
+        # Logging the size of the dataset
+        logger.info(
+            f"Dataset loaded. Train size: {len(dataset['train'])}, Test size: {len(dataset['test'])}"
         )
 
-        test_texts = dataset["test"]["text"][: self.params.eval_subset_size]
-        test_labels = torch.tensor(
-            dataset["test"]["label"][: self.params.eval_subset_size]
+        # Log subset sizes
+        train_size = self.params.subset_size
+        test_size = self.params.eval_subset_size
+        logger.info(
+            f"Using {train_size} samples for training and {test_size} samples for evaluation."
         )
+
+        train_texts = dataset["train"]["text"][:train_size]
+        train_labels = torch.tensor(dataset["train"]["label"][:train_size])
+
+        test_texts = dataset["test"]["text"][:test_size]
+        test_labels = torch.tensor(dataset["test"]["label"][:test_size])
 
         # TF-IDF vectorizer
+        logger.info(
+            f"Applying TF-IDF vectorization with a max of {self.params.input_size} features."
+        )
         self.vectorizer = TfidfVectorizer(max_features=self.params.input_size)
         X_train = self.vectorizer.fit_transform(train_texts).toarray()
         X_test = self.vectorizer.transform(test_texts).toarray()
@@ -95,6 +108,8 @@ class MLPTuner:
             shuffle=False,
         )
 
+        logger.info(f"Data loading and preprocessing complete.")
+
     def build_model(self):
         """Build the MLP model."""
         self.model = MLP(
@@ -108,7 +123,7 @@ class MLPTuner:
     def train(self):
         """Train the MLP model."""
         self.model.train()
-        logger.info("start training")
+        logger.info(f"Training started for {self.params.num_train_epochs} epochs.")
         for epoch in range(self.params.num_train_epochs):
             running_loss = 0.0
             for i, (inputs, labels) in enumerate(self.train_loader):
@@ -131,13 +146,20 @@ class MLPTuner:
                         f"Epoch [{epoch+1}/{self.params.num_train_epochs}], Step [{i+1}], Loss: {loss.item():.4f}"
                     )
 
+            # After each epoch, evaluate the model and save if it is the best model
+            accuracy = self.evaluate(save_best_model=True)
             logger.info(
-                f"Epoch [{epoch+1}/{self.params.num_train_epochs}], Loss: {running_loss/len(self.train_loader):.4f}"
+                (
+                    f"Epoch [{epoch+1}/{self.params.num_train_epochs}], "
+                    f"Loss: {running_loss/len(self.train_loader):.4f}, "
+                    f"Validation Accuracy: {accuracy:.2f}%"
+                )
             )
 
-    def evaluate(self):
-        """Evaluate the MLP model."""
+    def evaluate(self, save_best_model=False):
+        """Evaluate the MLP model and save the best one."""
         self.model.eval()
+        logger.info("Starting evaluation.")
         correct = 0
         total = 0
         with torch.no_grad():
@@ -152,7 +174,22 @@ class MLPTuner:
 
         accuracy = 100 * correct / total
         logger.info(f"Test Accuracy: {accuracy:.2f}%")
-        print(f"Test Accuracy: {accuracy:.2f}%")
+
+        # Save the model if it's the best so far
+        if save_best_model and accuracy > self.best_accuracy:
+            self.best_accuracy = accuracy
+            self.save_model()
+
+        return accuracy
+
+    def save_model(self):
+        """Save the model to the output directory."""
+        save_path = os.path.join(self.params.output_dir, "best_model.pth")
+        os.makedirs(self.params.output_dir, exist_ok=True)
+        torch.save(self.model.state_dict(), save_path)
+        logger.info(
+            f"Best model saved with accuracy {self.best_accuracy:.2f}% at {save_path}"
+        )
 
 
 def parse_args():
