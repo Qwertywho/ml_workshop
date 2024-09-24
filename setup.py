@@ -21,7 +21,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Zhong Qishuai",
     author_email="ferdinandzhong@gmail.com",
-    packages=find_packages(include=["src"]),
+    packages=find_packages(include=["workshop"]),
     classifiers=[
         "Programming Language :: Python :: 3 :: Only",
         "Programming Language :: Python :: 3.9",

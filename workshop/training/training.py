@@ -8,7 +8,7 @@ import torch.optim as optim
 from datasets import load_dataset
 from sklearn.feature_extraction.text import TfidfVectorizer
 from torch.utils.data import DataLoader, TensorDataset
-from ..utils.utils import register_logger
+from workshop.utils.utils import register_logger
 
 # Set up custom logging
 logger = logging.getLogger(__name__)
