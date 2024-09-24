@@ -3,24 +3,35 @@ import logging
 from dataclasses import dataclass
 
 import torch
+import torch.nn as nn
+import torch.optim as optim
 from datasets import load_dataset
-from transformers import (
-    DistilBertForSequenceClassification,
-    DistilBertTokenizer,
-    Trainer,
-    TrainerCallback,
-    TrainingArguments,
-)
+from sklearn.feature_extraction.text import TfidfVectorizer
+from torch.utils.data import DataLoader, TensorDataset
 
 # Set up custom logging
 logger = logging.getLogger(__name__)
+
+# MLP Model Definition
+class MLP(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size):
+        super(MLP, self).__init__()
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(hidden_size, output_size)
+        self.softmax = nn.LogSoftmax(dim=1)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.fc2(x)
+        return self.softmax(x)
 
 
 @dataclass
 class TrainingParams:
     """Dataclass for holding training parameters."""
 
-    model_name: str = "distilbert-base-uncased"
     dataset_name: str = "imdb"
     output_dir: str = "./results"
     num_train_epochs: int = 2
@@ -30,112 +41,121 @@ class TrainingParams:
     logging_steps: int = 100
     max_length: int = 512
     device: str = "cpu"
+    hidden_size: int = 128  # Size of the hidden layer for MLP
+    input_size: int = 5000  # Maximum features for TF-IDF
+    output_size: int = 2  # Binary classification
 
 
-class CustomLoggerCallback(TrainerCallback):
-    """Custom callback class to log training information."""
-
-    def on_log(self, args, state, control, logs=None, **kwargs):
-        """Log the information using the custom logger."""
-        if logs is not None:
-            logger.info(f"Step: {state.global_step}, Logs: {logs}")
-
-
-class DistilBertFineTuner:
+class MLPTuner:
     def __init__(self, params: TrainingParams):
         self.params = params
         self.model = None
-        self.tokenizer = None
+        self.vectorizer = None
         self.train_dataset = None
         self.test_dataset = None
+        self.train_loader = None
+        self.test_loader = None
+        self.criterion = None
+        self.optimizer = None
 
-    def load_model_and_tokenizer(self):
-        """Load pre-trained model and tokenizer."""
-        self.model = DistilBertForSequenceClassification.from_pretrained(
-            self.params.model_name, num_labels=2
-        )
-        self.tokenizer = DistilBertTokenizer.from_pretrained(self.params.model_name)
-
-    def load_and_tokenize_data(self):
-        """Load dataset and tokenize the text."""
+    def load_data_and_vectorizer(self):
+        """Load dataset and apply TF-IDF vectorization."""
         dataset = load_dataset(self.params.dataset_name)
 
-        def preprocess_function(examples):
-            return self.tokenizer(
-                examples["text"],
-                truncation=True,
-                padding="max_length",
-                max_length=self.params.max_length,
-            )
+        train_texts = dataset["train"]["text"][: self.params.subset_size]
+        train_labels = torch.tensor(
+            dataset["train"]["label"][: self.params.subset_size]
+        )
 
-        tokenized_dataset = dataset.map(preprocess_function, batched=True)
-        self.train_dataset = (
-            tokenized_dataset["train"]
-            .shuffle(seed=42)
-            .select(range(self.params.subset_size))
+        test_texts = dataset["test"]["text"][: self.params.eval_subset_size]
+        test_labels = torch.tensor(
+            dataset["test"]["label"][: self.params.eval_subset_size]
         )
-        self.test_dataset = (
-            tokenized_dataset["test"]
-            .shuffle(seed=42)
-            .select(range(self.params.eval_subset_size))
+
+        # TF-IDF vectorizer
+        self.vectorizer = TfidfVectorizer(max_features=self.params.input_size)
+        X_train = self.vectorizer.fit_transform(train_texts).toarray()
+        X_test = self.vectorizer.transform(test_texts).toarray()
+
+        # Convert to torch tensors
+        X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
+        X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
+
+        # Create DataLoader
+        self.train_loader = DataLoader(
+            TensorDataset(X_train_tensor, train_labels),
+            batch_size=self.params.batch_size,
+            shuffle=True,
         )
+        self.test_loader = DataLoader(
+            TensorDataset(X_test_tensor, test_labels),
+            batch_size=self.params.batch_size,
+            shuffle=False,
+        )
+
+    def build_model(self):
+        """Build the MLP model."""
+        self.model = MLP(
+            input_size=self.params.input_size,
+            hidden_size=self.params.hidden_size,
+            output_size=self.params.output_size,
+        ).to(self.params.device)
+        self.criterion = nn.CrossEntropyLoss()
+        self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
 
     def train(self):
-        """Set training arguments and train the model."""
-        training_args = TrainingArguments(
-            output_dir=self.params.output_dir,
-            evaluation_strategy="epoch",
-            save_strategy="epoch",
-            per_device_train_batch_size=self.params.batch_size,
-            per_device_eval_batch_size=self.params.batch_size,
-            num_train_epochs=self.params.num_train_epochs,
-            weight_decay=0.01,
-            logging_dir="./logs",
-            logging_steps=self.params.logging_steps,
-            load_best_model_at_end=True,
-            report_to="none",  # Disable built-in logging handlers (like TensorBoard)
-        )
+        """Train the MLP model."""
+        self.model.train()
+        for epoch in range(self.params.num_train_epochs):
+            running_loss = 0.0
+            for i, (inputs, labels) in enumerate(self.train_loader):
+                inputs, labels = inputs.to(self.params.device), labels.to(
+                    self.params.device
+                )
 
-        # Use the custom logger callback
-        trainer = Trainer(
-            model=self.model,
-            args=training_args,
-            train_dataset=self.train_dataset,
-            eval_dataset=self.test_dataset,
-            tokenizer=self.tokenizer,
-            callbacks=[CustomLoggerCallback()],
-        )
+                # Zero the parameter gradients
+                self.optimizer.zero_grad()
 
-        trainer.train()
+                # Forward + backward + optimize
+                outputs = self.model(inputs)
+                loss = self.criterion(outputs, labels)
+                loss.backward()
+                self.optimizer.step()
 
-        # Save the fine-tuned model
-        self.model.save_pretrained(self.params.output_dir)
-        self.tokenizer.save_pretrained(self.params.output_dir)
+                running_loss += loss.item()
+                if (i + 1) % self.params.logging_steps == 0:
+                    logger.info(
+                        f"Epoch [{epoch+1}/{self.params.num_train_epochs}], Step [{i+1}], Loss: {loss.item():.4f}"
+                    )
+
+            logger.info(
+                f"Epoch [{epoch+1}/{self.params.num_train_epochs}], Loss: {running_loss/len(self.train_loader):.4f}"
+            )
 
     def evaluate(self):
-        """Evaluate the trained model."""
-        trainer = Trainer(
-            model=self.model,
-            eval_dataset=self.test_dataset,
-            tokenizer=self.tokenizer,
-        )
-        eval_results = trainer.evaluate()
-        logger.info(f"Evaluation results: {eval_results}")
-        print(f"Evaluation results: {eval_results}")
+        """Evaluate the MLP model."""
+        self.model.eval()
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for inputs, labels in self.test_loader:
+                inputs, labels = inputs.to(self.params.device), labels.to(
+                    self.params.device
+                )
+                outputs = self.model(inputs)
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+
+        accuracy = 100 * correct / total
+        logger.info(f"Test Accuracy: {accuracy:.2f}%")
+        print(f"Test Accuracy: {accuracy:.2f}%")
 
 
 def parse_args():
     """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Fine-tune DistilBERT for sentiment analysis."
-    )
+    parser = argparse.ArgumentParser(description="Train an MLP for sentiment analysis.")
 
-    parser.add_argument(
-        "--model_name",
-        type=str,
-        default="distilbert-base-uncased",
-        help="Name of the model to use.",
-    )
     parser.add_argument(
         "--dataset_name", type=str, default="imdb", help="Name of the dataset to use."
     )
@@ -167,10 +187,13 @@ def parse_args():
         "--logging_steps", type=int, default=100, help="Number of steps for logging."
     )
     parser.add_argument(
-        "--max_length",
+        "--input_size", type=int, default=5000, help="Number of features for TF-IDF."
+    )
+    parser.add_argument(
+        "--hidden_size",
         type=int,
-        default=512,
-        help="Maximum sequence length for tokenization.",
+        default=128,
+        help="Number of neurons in the hidden layer.",
     )
 
     return parser.parse_args()
@@ -185,7 +208,6 @@ if __name__ == "__main__":
 
     # Initialize training parameters
     params = TrainingParams(
-        model_name=args.model_name,
         dataset_name=args.dataset_name,
         output_dir=args.output_dir,
         num_train_epochs=args.num_train_epochs,
@@ -193,21 +215,22 @@ if __name__ == "__main__":
         subset_size=args.subset_size,
         eval_subset_size=args.eval_subset_size,
         logging_steps=args.logging_steps,
-        max_length=args.max_length,
+        input_size=args.input_size,
+        hidden_size=args.hidden_size,
         device=str(device),
     )
 
-    # Create an instance of the fine-tuner class
-    fine_tuner = DistilBertFineTuner(params)
+    # Create an instance of the MLP fine-tuner class
+    mlp_tuner = MLPTuner(params)
 
-    # Load the model and tokenizer
-    fine_tuner.load_model_and_tokenizer()
+    # Load the data and build the vectorizer
+    mlp_tuner.load_data_and_vectorizer()
 
-    # Load and tokenize the dataset
-    fine_tuner.load_and_tokenize_data()
+    # Build the MLP model
+    mlp_tuner.build_model()
 
     # Train the model
-    fine_tuner.train()
+    mlp_tuner.train()
 
     # Evaluate the model
-    fine_tuner.evaluate()
+    mlp_tuner.evaluate()

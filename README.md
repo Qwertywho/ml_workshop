@@ -18,4 +18,8 @@
 
 ### Running Training Task
 
-* install required packages
+#### install required packages
+
+* source ~/.bashrc
+* conda activate workshop-env
+* pip install -r requirements_common.txt

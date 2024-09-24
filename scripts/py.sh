@@ -48,9 +48,3 @@ echo "Start creating Conda Environment ${CONDA_ENV}"
 # Create the Conda environment
 ${CONDA_DIR}/bin/conda create -n ${CONDA_ENV} python=3.9.18 -y
 
-# Activate the Conda environment
-echo "Conda Environment ${CONDA_ENV} has been created. Activating now..."
-. ${CONDA_DIR}/bin/activate ${CONDA_ENV}
-
-# Confirmation of activation
-echo "Conda Environment ${CONDA_ENV} is now active."
