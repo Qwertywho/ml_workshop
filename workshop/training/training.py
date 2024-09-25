@@ -186,7 +186,7 @@ class MLPTuner:
 
     def save_model(self):
         """Save the model to the output directory."""
-        save_path = os.path.join(self.params.output_dir, "best_model.pth")
+        save_path = os.path.join(self.params.output_dir, "pytorch_model.bin")
         os.makedirs(self.params.output_dir, exist_ok=True)
         torch.save(self.model.state_dict(), save_path)
         logger.info(
