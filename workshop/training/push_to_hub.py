@@ -6,7 +6,7 @@ from huggingface_hub import HfApi, Repository, create_repo
 def upload_model_to_huggingface(repo_name, model_save_path):
     # Set up repository
     api = HfApi()
-    repo_id = api.create_repo(repo_name).repo_id
+    repo_id = api.create_repo(repo_name, exist_ok=True).repo_id
 
     # Initialize a Repository object to handle versioning and commits
     repo = Repository(local_dir=model_save_path, clone_from=repo_id)

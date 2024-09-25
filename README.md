@@ -22,4 +22,12 @@
 
 * source ~/.bashrc
 * conda activate workshop-env
-* pip install -r requirements_common.txt
+* pip install -e .
+
+
+#### Training
+
+* python workshop/training/training.py --num_train_epochs 3 --batch_size 16 --input_size 10000 --hidden_size 256
+* push model to hub
+    * login to huggingface: `huggingface-cli login`
+    * `git lfs install`
