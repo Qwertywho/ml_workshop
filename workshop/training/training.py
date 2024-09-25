@@ -203,7 +203,6 @@ class MLPTuner:
             f.write(str(config))
 
 
-
 def parse_args():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description="Train an MLP for sentiment analysis.")
