@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 from dataclasses import dataclass
 
 import torch
@@ -60,6 +61,7 @@ class MLPTuner:
         self.test_loader = None
         self.criterion = None
         self.optimizer = None
+        self.best_accuracy = 0
 
     def load_data_and_vectorizer(self):
         """Load dataset and apply TF-IDF vectorization."""
