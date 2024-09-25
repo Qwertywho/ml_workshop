@@ -192,6 +192,16 @@ class MLPTuner:
         logger.info(
             f"Best model saved with accuracy {self.best_accuracy:.2f}% at {save_path}"
         )
+        config = {
+            "input_size": self.params.input_size,
+            "hidden_size": self.params.hidden_size,
+            "output_size": self.params.output_size,
+            "model_type": "mlp",
+        }
+
+        with open(os.path.join(self.params.output_dir, "config.json"), "w") as f:
+            f.write(str(config))
+
 
 
 def parse_args():
