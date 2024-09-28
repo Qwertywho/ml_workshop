@@ -3,7 +3,6 @@ import os
 
 import joblib
 import torch
-import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from huggingface_hub import hf_hub_download
@@ -14,12 +13,35 @@ from pydantic import BaseModel
 
 from workshop.utils.model import MLP
 
-# Define FastAPI app
-app = FastAPI()
-# metrics_app = make_asgi_app()
-# app.mount("/metrics", metrics_app)
+parser = argparse.ArgumentParser(description="Run FastAPI to serve a trained MLP model")
+parser.add_argument(
+    "--repo_id",
+    type=str,
+    required=True,
+    help="Directory containing model weights and vectorizer",
+)
+parser.add_argument(
+    "--port",
+    type=int,
+    required=False,
+    help="Port for running the app",
+    default=8000,
+)
+parser.add_argument(
+    "--model_input_size",
+    type=int,
+    default=5000,
+    help="Number of features for TF-IDF.",
+)
+parser.add_argument(
+    "--model_hidden_size",
+    type=int,
+    default=128,
+    help="Number of neurons in the hidden layer.",
+)
+args = parser.parse_args()
 
-# Define input data schema
+
 class InputText(BaseModel):
     text: str
 
@@ -42,22 +64,6 @@ class ModelAPI:
         self.app = FastAPI()
 
         # Add endpoint within the class
-    @app.post("/predict")
-    @RESPONSE_TIME.time()  # Prometheus histogram to measure response time
-    async def get_prediction(self, input_text: InputText):
-        """Prediction using the model trained
-        """
-        REQUEST_COUNT.inc()  # Increment request count
-        return self.predict(input_text.text)
-
-    # Add a Prometheus metrics endpoint
-    @app.get("/metrics")
-    async def get_metrics(self):
-        """Endpoint for metrics
-        """
-        return JSONResponse(
-            content=generate_latest(), media_type=CONTENT_TYPE_LATEST
-        )
 
     def _load_model_and_vectorizer(self, model_input_size: int, model_hidden_size: int):
         """Load model and vectorizer from the huggingface hub"""
@@ -99,45 +105,26 @@ class ModelAPI:
         return {"prediction": predicted_class}
 
 
-# Main function to accept arguments and run the app
-if __name__ == "__main__":
-    # Argument parser
-    parser = argparse.ArgumentParser(
-        description="Run FastAPI to serve a trained MLP model"
-    )
-    parser.add_argument(
-        "--repo_id",
-        type=str,
-        required=True,
-        help="Directory containing model weights and vectorizer",
-    )
-    parser.add_argument(
-        "--port",
-        type=int,
-        required=False,
-        help="Port for running the app",
-        default=8000,
-    )
-    parser.add_argument(
-        "--model_input_size",
-        type=int,
-        default=5000,
-        help="Number of features for TF-IDF.",
-    )
-    parser.add_argument(
-        "--model_hidden_size",
-        type=int,
-        default=128,
-        help="Number of neurons in the hidden layer.",
-    )
-    args = parser.parse_args()
+model_api = ModelAPI(
+    repo_id=args.repo_id,
+    model_input_size=args.model_input_size,
+    model_hidden_size=args.model_hidden_size,
+)
 
-    # Instantiate the ModelAPI class with the given model directory
-    model_api = ModelAPI(
-        repo_id=args.repo_id,
-        model_input_size=args.model_input_size,
-        model_hidden_size=args.model_hidden_size,
-    )
+# Define FastAPI app
+app = FastAPI()
 
-    # Run the FastAPI app from the class
-    uvicorn.run("__main__:app", host="0.0.0.0", port=args.port, reload=True)
+
+@app.post("/predict")
+@RESPONSE_TIME.time()  # Prometheus histogram to measure response time
+async def get_prediction(input_text: InputText):
+    """Prediction using the model trained"""
+    REQUEST_COUNT.inc()  # Increment request count
+    return model_api.predict(input_text.text)
+
+
+# Add a Prometheus metrics endpoint
+@app.get("/metrics")
+async def get_metrics(self):
+    """Endpoint for metrics"""
+    return JSONResponse(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
