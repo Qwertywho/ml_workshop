@@ -3,6 +3,7 @@ import logging
 import os
 from dataclasses import dataclass
 
+import joblib
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -10,26 +11,12 @@ from datasets import load_dataset
 from sklearn.feature_extraction.text import TfidfVectorizer
 from torch.utils.data import DataLoader, TensorDataset
 
+from workshop.utils.model import MLP
 from workshop.utils.utils import register_logger
 
 # Set up custom logging
 logger = logging.getLogger(__name__)
 register_logger(logger)
-
-# MLP Model Definition
-class MLP(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
-        super(MLP, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_size, output_size)
-        self.softmax = nn.LogSoftmax(dim=1)
-
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.relu(x)
-        x = self.fc2(x)
-        return self.softmax(x)
 
 
 @dataclass
@@ -201,6 +188,11 @@ class MLPTuner:
 
         with open(os.path.join(self.params.output_dir, "config.json"), "w") as f:
             f.write(str(config))
+
+        joblib.dump(
+            self.vectorizer,
+            os.path.join(self.params.output_dir, "tfidf_vectorizer.pkl"),
+        )
 
 
 def parse_args():

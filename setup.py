@@ -13,6 +13,8 @@ with open(path.join(here, "requirements_common.txt"), encoding="utf-8") as f:
 with open(path.join(here, "requirements_serve.txt"), encoding="utf-8") as f:
     serve_requirements = [req.strip() for req in f if req]
 
+print(serve_requirements)
+
 setup(
     name="ml_workshope",
     version="0.0.1",
