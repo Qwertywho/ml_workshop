@@ -87,7 +87,7 @@ class ModelAPI:
         # Load vectorizer
         self.vectorizer = joblib.load(vectorizer_path)
 
-    def predict(self, text: str):
+    async def predict(self, text: str):
         """Predict the class of the input text."""
         if self.model is None or self.vectorizer is None:
             raise HTTPException(
@@ -121,7 +121,7 @@ app = FastAPI()
 async def get_prediction(input_text: InputText):
     """Prediction using the model trained"""
     REQUEST_COUNT.inc()  # Increment request count
-    output_json = model_api.predict(input_text.text)
+    output_json = await model_api.predict(input_text.text)
     return JSONResponse(output_json)
 
 
