@@ -47,9 +47,13 @@ class InputText(BaseModel):
     text: str
 
 
-# Prometheus metrics
-REQUEST_COUNT = Counter("app_request_count", "Total number of requests")
-RESPONSE_TIME = Histogram("app_response_time_seconds", "Response time in seconds")
+# Prometheus metrics with labels
+REQUEST_COUNT = Counter("app_request_count", "Total number of requests", ['model', 'application'])
+RESPONSE_TIME = Histogram("app_response_time_seconds", "Response time in seconds", ['model', 'application'])
+
+# Initialize the metrics with labels
+REQUEST_COUNT = REQUEST_COUNT.labels(model="MLP", application="ml_workshop_sample")
+RESPONSE_TIME = RESPONSE_TIME.labels(model="MLP", application="ml_workshop_sample")
 
 
 class ModelAPI:
