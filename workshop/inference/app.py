@@ -42,23 +42,28 @@ class ModelAPI:
         self.app = FastAPI()
 
         # Add endpoint within the class
-        @app.post("/predict")
-        @RESPONSE_TIME.time()  # Prometheus histogram to measure response time
-        async def get_prediction(input_text: InputText):
-            REQUEST_COUNT.inc()  # Increment request count
-            return self.predict(input_text.text)
+    @app.post("/predict")
+    @RESPONSE_TIME.time()  # Prometheus histogram to measure response time
+    async def get_prediction(self, input_text: InputText):
+        """Prediction using the model trained
+        """
+        REQUEST_COUNT.inc()  # Increment request count
+        return self.predict(input_text.text)
 
-        # Add a Prometheus metrics endpoint
-        @app.get("/metrics")
-        async def get_metrics():
-            return JSONResponse(
-                content=generate_latest(), media_type=CONTENT_TYPE_LATEST
-            )
+    # Add a Prometheus metrics endpoint
+    @app.get("/metrics")
+    async def get_metrics(self):
+        """Endpoint for metrics
+        """
+        return JSONResponse(
+            content=generate_latest(), media_type=CONTENT_TYPE_LATEST
+        )
 
     def _load_model_and_vectorizer(self, model_input_size: int, model_hidden_size: int):
         """Load model and vectorizer from the huggingface hub"""
         model_path = hf_hub_download(repo_id=self.repo_id, filename="pytorch_model.bin")
         vectorizer_path = hf_hub_download(self.repo_id, "tfidf_vectorizer.pkl")
+        print(vectorizer_path)
 
         if not os.path.exists(model_path) or not os.path.exists(vectorizer_path):
             raise FileNotFoundError(
@@ -69,7 +74,7 @@ class ModelAPI:
         self.model = MLP(
             input_size=model_input_size, hidden_size=model_hidden_size, output_size=2
         )
-        self.model.load_state_dict(torch.load(model_path))
+        self.model.load_state_dict(torch.load(model_path, weights_only=True))
         self.model.eval()
 
         # Load vectorizer
