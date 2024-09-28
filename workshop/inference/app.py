@@ -6,15 +6,18 @@ import torch
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
-from pydantic import BaseModel
 from huggingface_hub import hf_hub_download
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
+# from prometheus_client import make_asgi_app
+from pydantic import BaseModel
 
 from workshop.utils.model import MLP
 
 # Define FastAPI app
 app = FastAPI()
+# metrics_app = make_asgi_app()
+# app.mount("/metrics", metrics_app)
 
 # Define input data schema
 class InputText(BaseModel):
@@ -31,20 +34,22 @@ class ModelAPI:
         self.repo_id = repo_id
         self.model = None
         self.vectorizer = None
-        self._load_model_and_vectorizer()
+        self._load_model_and_vectorizer(
+            model_input_size=model_input_size, model_hidden_size=model_hidden_size
+        )
 
         # Initialize FastAPI app within the class
         self.app = FastAPI()
 
         # Add endpoint within the class
-        @self.app.post("/predict")
+        @app.post("/predict")
         @RESPONSE_TIME.time()  # Prometheus histogram to measure response time
         async def get_prediction(input_text: InputText):
             REQUEST_COUNT.inc()  # Increment request count
             return self.predict(input_text.text)
 
         # Add a Prometheus metrics endpoint
-        @self.app.get("/metrics")
+        @app.get("/metrics")
         async def get_metrics():
             return JSONResponse(
                 content=generate_latest(), media_type=CONTENT_TYPE_LATEST
@@ -61,7 +66,9 @@ class ModelAPI:
             )
 
         # Load model
-        self.model = MLP(input_size=model_input_size, hidden_size=model_hidden_size, output_size=2)
+        self.model = MLP(
+            input_size=model_input_size, hidden_size=model_hidden_size, output_size=2
+        )
         self.model.load_state_dict(torch.load(model_path))
         self.model.eval()
 
@@ -104,13 +111,16 @@ if __name__ == "__main__":
         type=int,
         required=False,
         help="Port for running the app",
-        default=8000
+        default=8000,
     )
     parser.add_argument(
-        "--input_size", type=int, default=5000, help="Number of features for TF-IDF."
+        "--model_input_size",
+        type=int,
+        default=5000,
+        help="Number of features for TF-IDF.",
     )
     parser.add_argument(
-        "--hidden_size",
+        "--model_hidden_size",
         type=int,
         default=128,
         help="Number of neurons in the hidden layer.",
@@ -118,7 +128,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Instantiate the ModelAPI class with the given model directory
-    model_api = ModelAPI(repo_id=args.repo_id)
+    model_api = ModelAPI(
+        repo_id=args.repo_id,
+        model_input_size=args.model_input_size,
+        model_hidden_size=args.model_hidden_size,
+    )
 
     # Run the FastAPI app from the class
     uvicorn.run(model_api.app, host="0.0.0.0", port=args.port, reload=True)
