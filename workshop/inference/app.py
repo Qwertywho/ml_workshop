@@ -5,7 +5,7 @@ import joblib
 import torch
 import uvicorn
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 from huggingface_hub import hf_hub_download
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
@@ -121,7 +121,8 @@ app = FastAPI()
 async def get_prediction(input_text: InputText):
     """Prediction using the model trained"""
     REQUEST_COUNT.inc()  # Increment request count
-    return model_api.predict(input_text.text)
+    output_json = model_api.predict(input_text.text)
+    return JSONResponse(output_json)
 
 
 # Add a Prometheus metrics endpoint
