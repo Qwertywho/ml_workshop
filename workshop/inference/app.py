@@ -5,7 +5,7 @@ import joblib
 import torch
 import uvicorn
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import Response
 from huggingface_hub import hf_hub_download
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
@@ -128,7 +128,7 @@ async def get_prediction(input_text: InputText):
 @app.get("/metrics")
 async def get_metrics():
     """Endpoint for metrics"""
-    return JSONResponse(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 if __name__ == "__main__":
