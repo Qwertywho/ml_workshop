@@ -140,4 +140,4 @@ if __name__ == "__main__":
     )
 
     # Run the FastAPI app from the class
-    uvicorn.run(model_api.app, host="0.0.0.0", port=args.port, reload=True)
+    uvicorn.run("__main__.app", host="0.0.0.0", port=args.port, reload=True)
