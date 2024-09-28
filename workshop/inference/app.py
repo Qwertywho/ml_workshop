@@ -45,15 +45,16 @@ class ModelAPI:
         self.model = MLP(
             input_size=model_input_size, hidden_size=model_hidden_size, output_size=2
         )
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.load_state_dict(
-            torch.load(model_path, map_location=torch.device("cpu"))
+            torch.load(model_path, map_location=device, weights_only=True)
         )
         self.model.eval()
 
         # Load vectorizer
         self.vectorizer = joblib.load(vectorizer_path)
 
-    async def predict(self, text: str):
+    def predict(self, text: str):
         """Predict the class of the input text."""
         if self.model is None or self.vectorizer is None:
             raise HTTPException(
@@ -81,10 +82,10 @@ model_api = None
 
 @app.post("/predict")
 @RESPONSE_TIME.time()  # Prometheus histogram to measure response time
-async def get_prediction(input_text: InputText):
+def get_prediction(input_text: InputText):
     """Prediction using the model trained"""
     REQUEST_COUNT.inc()  # Increment request count
-    output_json = await model_api.predict(input_text.text)
+    output_json = model_api.predict(input_text.text)
     return JSONResponse(output_json)
 
 
