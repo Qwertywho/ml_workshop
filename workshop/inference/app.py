@@ -27,7 +27,7 @@ RESPONSE_TIME = Histogram("app_response_time_seconds", "Response time in seconds
 
 
 class ModelAPI:
-    def __init__(self, repo_id: str):
+    def __init__(self, repo_id: str, model_input_size: int, model_hidden_size: int):
         self.repo_id = repo_id
         self.model = None
         self.vectorizer = None
@@ -50,11 +50,10 @@ class ModelAPI:
                 content=generate_latest(), media_type=CONTENT_TYPE_LATEST
             )
 
-    def _load_model_and_vectorizer(self):
+    def _load_model_and_vectorizer(self, model_input_size: int, model_hidden_size: int):
         """Load model and vectorizer from the huggingface hub"""
         model_path = hf_hub_download(repo_id=self.repo_id, filename="pytorch_model.bin")
-        model_path = os.path.join(self.repo_id, "pytorch_model.bin")
-        vectorizer_path = os.path.join(self.repo_id, "tfidf_vectorizer.pkl")
+        vectorizer_path = hf_hub_download(self.repo_id, "tfidf_vectorizer.pkl")
 
         if not os.path.exists(model_path) or not os.path.exists(vectorizer_path):
             raise FileNotFoundError(
@@ -62,7 +61,7 @@ class ModelAPI:
             )
 
         # Load model
-        self.model = MLP(input_size=5000, hidden_size=128, output_size=2)
+        self.model = MLP(input_size=model_input_size, hidden_size=model_hidden_size, output_size=2)
         self.model.load_state_dict(torch.load(model_path))
         self.model.eval()
 
@@ -106,6 +105,15 @@ if __name__ == "__main__":
         required=False,
         help="Port for running the app",
         default=8000
+    )
+    parser.add_argument(
+        "--input_size", type=int, default=5000, help="Number of features for TF-IDF."
+    )
+    parser.add_argument(
+        "--hidden_size",
+        type=int,
+        default=128,
+        help="Number of neurons in the hidden layer.",
     )
     args = parser.parse_args()
 
