@@ -29,5 +29,11 @@
 
 * python workshop/training/training.py --num_train_epochs 3 --batch_size 16 --input_size 10000 --hidden_size 256
 * push model to hub
-    * login to huggingface: `huggingface-cli login`
-    * `git lfs install`
+  * login to huggingface: `huggingface-cli login`
+  * `git lfs install`
+  * `python training/push_to_hub.py --repo_name <your_repo_name> --model_save_path <model_dir>`
+
+#### Build Docker Image
+
+* `sudo apt install docker.io -y`
+* `sudo systemctl start docker`
