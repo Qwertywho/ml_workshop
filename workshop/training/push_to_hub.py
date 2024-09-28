@@ -18,6 +18,11 @@ def upload_model_to_huggingface(repo_name, model_save_path):
         path_in_repo="config.json",
         path_or_fileobj=f"{model_save_path}/config.json",
     )
+    api.upload_file(
+        repo_id=repo_id,
+        path_in_repo="tfidf_vectorizer.pkl",
+        path_or_fileobj=f"{model_save_path}/config.json",
+    )
 
 
 if __name__ == "__main__":

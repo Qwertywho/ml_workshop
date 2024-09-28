@@ -8,6 +8,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from pydantic import BaseModel
+from huggingface_hub import hf_hub_download
+
 
 from workshop.utils.model import MLP
 
@@ -25,8 +27,8 @@ RESPONSE_TIME = Histogram("app_response_time_seconds", "Response time in seconds
 
 
 class ModelAPI:
-    def __init__(self, model_dir: str):
-        self.model_dir = model_dir
+    def __init__(self, repo_id: str):
+        self.repo_id = repo_id
         self.model = None
         self.vectorizer = None
         self._load_model_and_vectorizer()
@@ -49,9 +51,10 @@ class ModelAPI:
             )
 
     def _load_model_and_vectorizer(self):
-        """Load model and vectorizer from the provided directory."""
-        model_path = os.path.join(self.model_dir, "pytorch_model.bin")
-        vectorizer_path = os.path.join(self.model_dir, "tfidf_vectorizer.pkl")
+        """Load model and vectorizer from the huggingface hub"""
+        model_path = hf_hub_download(repo_id=self.repo_id, filename="pytorch_model.bin")
+        model_path = os.path.join(self.repo_id, "pytorch_model.bin")
+        vectorizer_path = os.path.join(self.repo_id, "tfidf_vectorizer.pkl")
 
         if not os.path.exists(model_path) or not os.path.exists(vectorizer_path):
             raise FileNotFoundError(
@@ -92,15 +95,22 @@ if __name__ == "__main__":
         description="Run FastAPI to serve a trained MLP model"
     )
     parser.add_argument(
-        "--model_dir",
+        "--repo_id",
         type=str,
         required=True,
         help="Directory containing model weights and vectorizer",
     )
+    parser.add_argument(
+        "--port",
+        type=int,
+        required=False,
+        help="Port for running the app",
+        default=8000
+    )
     args = parser.parse_args()
 
     # Instantiate the ModelAPI class with the given model directory
-    model_api = ModelAPI(model_dir=args.model_dir)
+    model_api = ModelAPI(repo_id=args.repo_id)
 
     # Run the FastAPI app from the class
-    uvicorn.run(model_api.app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(model_api.app, host="0.0.0.0", port=args.port, reload=True)
