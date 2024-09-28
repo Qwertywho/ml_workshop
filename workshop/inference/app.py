@@ -3,6 +3,7 @@ import os
 
 import joblib
 import torch
+import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from huggingface_hub import hf_hub_download
@@ -125,6 +126,11 @@ async def get_prediction(input_text: InputText):
 
 # Add a Prometheus metrics endpoint
 @app.get("/metrics")
-async def get_metrics(self):
+async def get_metrics():
     """Endpoint for metrics"""
     return JSONResponse(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
+if __name__ == "__main__":
+    # Run the FastAPI app from the class
+    uvicorn.run("__main__:app", host="0.0.0.0", port=args.port, reload=True)
