@@ -74,7 +74,6 @@ class ModelAPI:
         """Load model and vectorizer from the huggingface hub"""
         model_path = hf_hub_download(repo_id=self.repo_id, filename="pytorch_model.bin")
         vectorizer_path = hf_hub_download(self.repo_id, "tfidf_vectorizer.pkl")
-        print(vectorizer_path)
 
         if not os.path.exists(model_path) or not os.path.exists(vectorizer_path):
             raise FileNotFoundError(
