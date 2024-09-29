@@ -3,7 +3,7 @@
 ## Preparation
 
 * github repo for the workshop: [Workshop Link](https://github.com/FerdinandZhong/ml_workshop.git)
-* 2 EC2 Instance (Ubuntu Based), recommended to use t2-medium
+* 2 EC2 Instance (Ubuntu Based), recommended to use t2-medium and have at least 16GB storage.
 ![Creation of EC2 Instance](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/ec2_instance.png?raw=true)
   *  **Instance_A**: training + inference + stress testing
   * **Instance_B**: monitoring 
@@ -98,6 +98,8 @@ In the other hand, we shall prepare the implementation of the model inference ap
 
 In today's practice, due to the limitation of the resource, we don't go through the CICD process and we don't build the docker image for the inference application.
 In the following steps, we manually execute the launching of the application which typically will be automated in the industry practice. For simulation purpose, when launching the application, model weights are still pulled from the huggingface hub.
+
+There's also a sample Dockerfile for building the docker image for this simple inference application. You can try it yourself if you're interested. It's recommended to build the docker image and run the docker container in an instance with larger storage space.
 
 * install the dependencies needed for the serving: 
   * `cd ml_workshop`
