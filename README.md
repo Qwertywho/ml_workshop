@@ -157,16 +157,16 @@ Similarly, the inbound rules should be appended to enable access through ports
 
 Now connect to instance_b.
 
-It's still recommended to execute the following steps within the tmux session.
+It's still recommended to execute the following steps within the tmux session (use below command to create a new tmux session).
 
-`tmux new -s <anyname you prefered>`
+`tmux new -s monitoring`
 
 Then running the below cmds inside the tmux window
 
 ```shell
 sudo apt-get update
 sudo apt-get install -y curl wget 
-tmux new -s monitoring
+git clone https://github.com/FerdinandZhong/ml_workshop.git
 ```
 
 #### Prometheus Server
@@ -182,46 +182,11 @@ In the first tmux window of instance_b, let's set up the prometheus server
     cd prometheus-2.37.5.linux-amd64
     ```
 
-  * update the `prometheus.yml`
-  * run `vim prometheus.yml` or `nano prometheus.yml`
-  * replace the original configuration file content by adding the highlighted
-
-    ```yaml
-    # my global config
-      global:
-        scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
-        evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
-        # scrape_timeout is set to the global default (10s).
-
-        # Alertmanager configuration
-        alerting:
-        alertmanagers:
-            - static_configs:
-                - targets:
-                # - alertmanager:9093
-
-        # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
-        rule_files:
-        # - "first_rules.yml"
-        # - "second_rules.yml"
-
-        # A scrape configuration containing exactly one endpoint to scrape:
-        # Here it's Prometheus itself.
-        scrape_configs:
-        # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
-        - job_name: "prometheus"
-
-            # metrics_path defaults to '/metrics'
-            # scheme defaults to 'http'.
-
-            static_configs:
-            - targets: ["localhost:9090"]
-
-        - job_name: 'fastapi-app-instance-a'
-            static_configs:
-            - targets: ['instance_a_public_ip:8000']
-        ~                                           
-    ```
+  * update the `prometheus.yml` by
+    * `cp ~/ml_workshop/prometheus.yml .`
+    * run `vim prometheus.yml` or `nano prometheus.yml` to update the yaml file.
+    * replace the original `instance_a_public_ip` with your **Instance A's public ip**
+    
   * save the file
 
 * run the prometheus server: `./prometheus --config.file=prometheus.yml`
