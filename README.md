@@ -2,7 +2,6 @@
 
 ## Preparation
 
-* github repo for the workshop: [Workshop Link](https://github.com/FerdinandZhong/ml_workshop.git)
 * 2 EC2 Instance (Ubuntu Based), recommended to use t2-medium and have 29GB storage.
 ![Creation of EC2 Instance](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/ec2_instance.png?raw=true)
   *  **Instance_A**: training + inference + stress testing
@@ -14,14 +13,14 @@
 
 ### Environment Setting Up 
 
-* create EC2 Instance_A
+* create EC2 Instance_A under your security group
   * Ubuntu based instance
   * t2_medium 
   ![t2_medium](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/t2_medium_sample.png?raw=true)
   * create the key_pair for your instances
   * set the disk space to be 29GB
   ![disk_space](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/disk_space_setting.png?raw=true)
-  * inbound rules configuration (under security)
+  * append the following inbound rules configuration (under security)
   ![Inbound Rules Configuration](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/configure_ec2_instance_inbound_rules.png?raw=true)
     * 8000 for serving the model
     * 8089 for stress testing
@@ -46,7 +45,7 @@ bash start.sh
 ```
 
 * after successfully setting up the environment, it's recommended to create a `tmux` session for the following operations.
-* tmux cheetsheet for your reference: [tmux_cheetsheet](https://tmuxcheatsheet.com/)
+* tmux cheetsheet for your reference (open the cheetsheet in another tab): [tmux_cheetsheet](https://tmuxcheatsheet.com/)
 * `tmux new -s <anyname you prefered>`
 
 ### Model Training
@@ -63,24 +62,29 @@ Use the first window of the tmux session for the training if you decide to use t
 
 #### Training
 
-* for demo purpose, we only train a simple MLP model for the binary classification task (dataset: `imdb`)
-* script for training the model: **workshop/training/training.py**
+* for demo purpose, we only train a simple MLP (multilayer perceptron) model for the binary classification task (dataset: `imdb`)
+* script for training the model (for your reference): **workshop/training/training.py**
 * check all the arguments needed for the training task: `python workshop/training/training.py --help`
-* sample of training job: `python workshop/training/training.py --output_dir ./results --num_train_epochs 3 --batch_size 16 --input_size 10000 --hidden_size 256 `
+* sample of training job: `python workshop/training/training.py --output_dir ./results --num_train_epochs 3 --batch_size 16 --input_size 10000 --hidden_size 256`
+
   **Note: you can modify the parameters passed in for the training job, but the model-specific parameters should be consistant between training and inference**
 * after training, we shall push trained model weights together with the tokenizer file to hub
-  * a active huggingface account is required here for creating your model repo and push the files.
-  * create your model repository in huggingface UI. ![model creation](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/huggingface_create_model.png?raw=true)
+  * create huggingface account: [huggingface main page](https://huggingface.co/)
+  * an active Hugging Face account is required to create your model repository and upload files.
+  * create your model repository through huggingface UI by clicking your account profile image as shown in the below figure. ![model creation](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/huggingface_create_model.png?raw=true)
   * the full name (including the account name) is the id of your repository. ![model creation](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/huggingface_repo_id.png?raw=true)
-  * login to huggingface in your instance terminal: `huggingface-cli login`
-    * login with the token
-    * token will need to be created from the huggingface website. [token creation](https://huggingface.co/settings/tokens)
-    * click `Create new token` button in the page, and enable the permissions as shown in the below sample.
-    ![Create new token](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/huggingface_create_new_token.png?raw=true)
+  * token will need to be created from the huggingface website. [token creation](https://huggingface.co/settings/tokens)
+  * click `Create new token` button in the page, and enable the permissions as shown in the below sample.
+  ![Create new token](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/huggingface_create_new_token.png?raw=true)
+
+    **Note: remember to save your token value locally**
+
+  * login to huggingface in your instance terminal: `huggingface-cli login` with the token you created
   * `git lfs install`
   * `python workshop/training/push_to_hub.py --repo_name <your repo id> --model_save_path ./results`
   * the model repository should be available now in the huggingface_hub
   ![Huggingface Repo](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/huggingface_repo.png?raw=true)
+  * **Do a screenshot of your uploaded files and save it for submission**
 
 
 
@@ -91,7 +95,9 @@ Use the first window of the tmux session for the training if you decide to use t
 We will serve the trained model with FastAPI & Uvicorn to launch a simple web server. It's recommended to execute the following serving task in the new window of the tmux session.
 </br>
 
-**create new window in the session: `ctrl+b c`**
+**create new window in the session: `ctrl+b, c`**
+
+(Press ctrl+b together, then release them and press c)
 
 In this practice, we simply serve the model inside the same instance. However, in the industry practice, from model training to model inference can be much more complex. 
 
@@ -112,42 +118,60 @@ In the following steps, we manually execute the launching of the application whi
 There's also a sample Dockerfile for building the docker image for this simple inference application. You can try it yourself if you're interested. It's recommended to build the docker image and run the docker container in an instance with larger storage space.
 
 * install the dependencies needed for the serving: 
-  * `cd ml_workshop`
+  * `cd ml_workshop` (ensure you're under this directory)
   * `conda activate workshop-env`
   * `pip install -e .[serve]`
 * serve the app: `python workshop/inference/app.py --repo_id <your repo id> --model_input_size 10000 --model_hidden_size 256`</br>
 **Note: the input_size and hidden_size should be consistant with the training job**
-![Web Server](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/fastapi_running.png?raw=true)
-* you can verify your simple running application from your local machine:
 
-```shell
-curl -X POST "http://<your public ip of instance_a>:8000/predict"   -H "Content-Type: application/json"  -d '{"text": "Your text content here"}'
-```
+* you should be able to see the below message in your terminal![Web Server](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/fastapi_running.png?raw=true)
+* you can verify your simple running application from the instance:
+  * `ctrl+b, c`
 
-* you can also verify the prometheus client is running with the endpoint `/metrics` by `curl -X GET http://<your public ip of instance_a>:8000/metrics`
-![Prometheus Client Raw Outputs](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/prometheus_metrics_raw_outputs.png?raw=true)
+  * 
+    ```shell
+    curl -X POST "http://localhost:8000/predict"   -H "Content-Type: application/json"  -d '{"text": "Your text content here"}'
+    ```
+
+* you can also verify the prometheus client is running with the endpoint `/metrics` by running the below cmd in the same tmux window
+  ```shell
+  curl -X GET http://localhost:8000/metrics
+  ```
+
+  you should be able to see the similar outputs as shown in the below figure
+  ![Prometheus Client Raw Outputs](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/prometheus_metrics_raw_outputs.png?raw=true)
+
 
 
 ### Monitoring
 
 Now we should set up the monitoring instance in the **Instance_B**.
 
-Similarly, the inbound rules should be set up to enable access through ports
+**Follow the same instruction for creating Instance_A**
+
+Similarly, the inbound rules should be appended to enable access through ports
 
 * `3000` -- port for Grafana Dashboard
 * `9090` -- port for Prometheus Server
 
+
+Now connect to instance_b.
+
 It's still recommended to execute the following steps within the tmux session.
+
+`tmux new -s <anyname you prefered>`
+
+Then running the below cmds inside the tmux window
 
 ```shell
 sudo apt-get update
-sudo apt-get install -y tmux curl wget 
+sudo apt-get install -y curl wget 
 tmux new -s monitoring
 ```
 
 #### Prometheus Server
 
-In the first window, let's set up the prometheus server
+In the first tmux window of instance_b, let's set up the prometheus server
 
 * install the Prometheus Server as the first step:
   * `wget https://github.com/prometheus/prometheus/releases/download/v2.37.5/prometheus-2.37.5.linux-amd64.tar.gz`
@@ -159,12 +183,12 @@ In the first window, let's set up the prometheus server
     ```
 
   * update the `prometheus.yml`
-  * `vim prometheus.yml`
-  * update the configuration file as below, type `i` to edit the file
+  * run `vim prometheus.yml` or `nano prometheus.yml`
+  * replace the original configuration file content by adding the highlighted
 
     ```yaml
     # my global config
-        global:
+      global:
         scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
         evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
         # scrape_timeout is set to the global default (10s).
@@ -198,7 +222,7 @@ In the first window, let's set up the prometheus server
             - targets: ['instance_a_public_ip:8000']
         ~                                           
     ```
-  * save the file by `esc + :x`
+  * save the file
 
 * run the prometheus server: `./prometheus --config.file=prometheus.yml`
 * you can verify the Prometheus Serve through `http://instance_b_public_ip:9090` in your browser
