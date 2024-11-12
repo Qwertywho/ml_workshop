@@ -259,6 +259,7 @@ Start the new window with `ctrl+b, c`.
 * `locust -f workshop/stress_testing/locustfile.py --host http://0.0.0.0:8000`
 * Now we can start the stress testing through the UI of `locust` through the URL `http://instance_a_public_ip:8089`
   * Trigger the stress testing with the below configurations.
+  
   ![trigger the testing](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/start_locust_test.png?raw=true)
   * View the stress testing charts from locust UI (Screenshot the running charts of your locust server, save for submission).
   ![locust chart](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/stress_testing_charts.png?raw=true)
