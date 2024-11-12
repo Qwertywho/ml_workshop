@@ -240,7 +240,7 @@ newgrp docker
 
 Now let's go back to the **Instance_A** to start the stress testing over our launched application.
 
-It's recommended to run the stress testing in the new window of the tmux session `ctrl+b c`.
+It's recommended to run the stress testing in the new window of the tmux session `ctrl+b, c`.
 
 * in the new window, we should activate the same conda environment `conda activate workshop-env`
 * dependencies required for stress testing have been installed in the last step, the package we need for the stress testing is `locust`, you can verify the installation by `pip freeze | grep locust`
@@ -248,8 +248,8 @@ It's recommended to run the stress testing in the new window of the tmux session
 * `locust -f workshop/stress_testing/locustfile.py --host http://0.0.0.0:8000`
 * now we can start the stress testing through the UI of `locust` through the URL `http://instance_a_public_ip:8089`
   * trigger the stress testing
-  ![Adding Data Source](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/start_locust_test.png?raw=true)
-  * view the stress testing charts from locust UI
-  ![Adding Data Source](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/stress_testing_charts.png?raw=true)
-  * we can check the Grafana dashboard to monitoring the metrics of the application as well
-  ![Adding Data Source](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/grafana_dashboard.png?raw=true)
+  ![trigger the testing](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/start_locust_test.png?raw=true)
+  * view the stress testing charts from locust UI (Screenshot the running charts of your locust server, save for submission).
+  ![locust chart](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/stress_testing_charts.png?raw=true)
+  * we can check the Grafana dashboard to monitoring the metrics of the application as well (Screenshot the running charts in your grafana dashboard, save for submission). 
+  ![grafana dashboard checking](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/grafana_dashboard.png?raw=true)
