@@ -13,7 +13,7 @@
 
 ### Environment Setting Up 
 
-* create EC2 Instance_A under your security group
+* Create EC2 Instance_A under your security group
   * Ubuntu based instance
   * t2_medium 
   ![t2_medium](https://github.com/FerdinandZhong/ml_workshop/blob/main/images/t2_medium_sample.png?raw=true)
@@ -52,7 +52,7 @@ bash start.sh
 
 Use the first window of the tmux session for the training if you decide to use the tmux session.
 
-#### install required packages
+#### Install required packages
 
 * `source ~/.bashrc`
 * `fish` (optional, this cmd will activate the specific shell tool -- `fish`)
@@ -194,7 +194,7 @@ In the first tmux window of instance_b, let's set up the prometheus server
 
 #### Grafana Dashboard
 
-Create another window in the session.
+Go back to your instance_b's terminal, leave the prometheus server running. Create another window in the session. `ctrl+b, c`
 
 We wil use docker to run the Grafana Dashboard
 
@@ -207,7 +207,7 @@ sudo systemctl start docker
 sudo systemctl enable docker
 ```
 
-* add your user to the Docker group to run Docker without `sudo`
+* run below cmds for add $User to docker group to facilitate running `docker command`
 
 ```shell
 sudo usermod -aG docker $USER
@@ -240,9 +240,9 @@ newgrp docker
 
 Now let's go back to the **Instance_A** to start the stress testing over our launched application.
 
-It's recommended to run the stress testing in the new window of the tmux session.
+It's recommended to run the stress testing in the new window of the tmux session `ctrl+b c`.
 
-* in the new window, we should activate the same conda environment.
+* in the new window, we should activate the same conda environment `conda activate workshop-env`
 * dependencies required for stress testing have been installed in the last step, the package we need for the stress testing is `locust`, you can verify the installation by `pip freeze | grep locust`
 * in the same instance, the application is still running under the port `8000`, therefore we are going to stress testing against the endpoint `/predict` through this port
 * `locust -f workshop/stress_testing/locustfile.py --host http://0.0.0.0:8000`
