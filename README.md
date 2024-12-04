@@ -7,7 +7,7 @@
   *  **Instance_A**: training + inference + stress testing
   * **Instance_B**: monitoring 
   * Both two instances need to be ssh accessible when launching, as all the following operations require you to execute through ssh
-* Guggingface account
+* Huggingface account
 
 ## Training (with Instance_A)
 
