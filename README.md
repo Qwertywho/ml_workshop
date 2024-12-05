@@ -128,7 +128,8 @@ There's also a sample Dockerfile for building the docker image for this simple i
 * You can verify your simple running application from the instance:
   * `ctrl+b, c`
 
-since using same instance dont need to change the host, the prediction is 0
+*since using same instance dont need to change the host, the prediction is 0
+  
   * 
     ```shell
     curl -X POST "http://localhost:8000/predict"   -H "Content-Type: application/json"  -d '{"text": "Your text content here"}'
