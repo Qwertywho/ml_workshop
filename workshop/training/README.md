@@ -68,7 +68,7 @@ log(3/1) ≈ 1.0986
 ## MLP
 
 Model structure:
-
+(input size must be same as the vector size)
 ```python
 class MLP(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
